@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beta & Gamma Function Explorer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f6f7f9;--bg3:#eef0f4;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --blue:#185FA5;--green:#1D9E75;--red:#D85A30;
+  --purple:#534AB7;--teal:#0F6E56;
+  --radius:10px;--radius-sm:6px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+    --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);min-height:100vh}
+header{background:var(--bg);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:14px}
+.header-icon{width:40px;height:40px;background:var(--purple);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0}
+header h1{font-size:18px;font-weight:600}
+header p{font-size:13px;color:var(--text2);margin-top:2px}
+.container{max-width:1100px;margin:0 auto;padding:1.5rem}
+.tabs{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{padding:7px 18px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s}
+.tab:hover{background:var(--bg3);color:var(--text)}
+.tab.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}.grid4{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.metric-val{font-size:22px;font-weight:600;color:var(--text)}
+.metric-sub{font-size:12px;color:var(--text2);margin-top:3px}
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ctrl-row label{font-size:13px;color:var(--text2);min-width:100px}
+.ctrl-row input[type=range]{flex:1;accent-color:var(--purple)}
+.ctrl-val{font-size:13px;font-weight:600;color:var(--text);min-width:42px;text-align:right;font-variant-numeric:tabular-nums}
+.formula-box{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:0;padding:.8rem 1.1rem;font-size:14px;font-family:'Courier New',monospace;color:var(--text);line-height:1.8;margin-bottom:14px}
+.insight{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:12px}
+.special-card{background:var(--bg2);border-radius:var(--radius-sm);padding:.6rem .75rem;text-align:center}
+.special-top{font-size:11px;color:var(--text3);margin-bottom:4px}
+.special-bot{font-size:15px;font-weight:600;color:var(--text);font-family:'Courier New',monospace}
+canvas{display:block;width:100%;border-radius:var(--radius-sm)}
+select{padding:5px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px;flex:1;cursor:pointer}
+footer{text-align:center;padding:2rem;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:1rem;background:var(--bg)}
+.section{display:none}
+.section.active{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">&#915;</div>
+  <div>
+    <h1>Beta &amp; Gamma Function Explorer</h1>
+    <p>Interactive visualizations &mdash; Saurabh Maths</p>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-t="gamma">&#915; Gamma function</button>
+  <button class="tab" data-t="beta">B Beta function</button>
+  <button class="tab" data-t="relation">Relation B = &#915;&#915;/&#915;</button>
+  <button class="tab" data-t="integral">Integral visualizer</button>
+</div>
+
+<div id="sec-gamma" class="section active">
+  <div class="formula-box">
+    &#915;(z) = &#8747;&#8320;&#8734; t^(z&minus;1) &middot; e^(&minus;t) dt &nbsp;&nbsp;&nbsp; Key property: &#915;(z+1) = z &middot; &#915;(z) &nbsp;&nbsp;&nbsp; &#915;(n+1) = n! for positive integers
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="ctrl-row">
+        <label>Parameter z</label>
+        <input type="range" id="gz" min="0.2" max="5.5" step="0.05" value="2">
+        <span class="ctrl-val" id="gzv">2.00</span>
+      </div>
+      <div class="grid3">
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">&#915;(z)</div>
+          <div class="metric-val" id="g-val">1.0000</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">&#915;(z+1)</div>
+          <div class="metric-val" id="g-val1">1.0000</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">z &middot; &#915;(z)</div>
+          <div class="metric-val" id="g-recur">1.0000</div>
+          <div class="metric-sub">= &#915;(z+1) &#10003;</div>
+        </div>
+      </div>
+      <div class="grid4" style="margin:12px 0">
+        <div class="special-card"><div class="special-top">&#915;(1)</div><div class="special-bot">1</div></div>
+        <div class="special-card"><div class="special-top">&#915;(2)</div><div class="special-bot">1</div></div>
+        <div class="special-card"><div class="special-top">&#915;(3)</div><div class="special-bot">2</div></div>
+        <div class="special-card"><div class="special-top">&#915;(&#189;)</div><div class="special-bot">&#8730;&#960;</div></div>
+      </div>
+      <div class="insight" id="g-insight">Drag the slider to explore. The recurrence &#915;(z+1) = z&#183;&#915;(z) generalises the factorial to all real numbers.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#915;(z) curve &mdash; dot shows current z</div>
+      <canvas id="gc" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="sec-beta" class="section">
+  <div class="formula-box">
+    B(x, y) = &#8747;&#8320;&#185; t^(x&minus;1) (1&minus;t)^(y&minus;1) dt &nbsp;&nbsp;&nbsp; Symmetric: B(x,y) = B(y,x) &nbsp;&nbsp;&nbsp; B(n,m) = (n&minus;1)!(m&minus;1)! / (n+m&minus;1)!
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="ctrl-row">
+        <label>Parameter x</label>
+        <input type="range" id="bx" min="0.3" max="6" step="0.1" value="2">
+        <span class="ctrl-val" id="bxv">2.0</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Parameter y</label>
+        <input type="range" id="by" min="0.3" max="6" step="0.1" value="3">
+        <span class="ctrl-val" id="byv">3.0</span>
+      </div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">B(x, y)</div>
+          <div class="metric-val" id="b-val">0.08333</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">B(y, x)</div>
+          <div class="metric-val" id="b-sym">0.08333</div>
+          <div class="metric-sub">symmetry &#10003;</div>
+        </div>
+      </div>
+      <div class="grid4" style="margin-bottom:10px">
+        <div class="special-card"><div class="special-top">B(1,1)</div><div class="special-bot">1</div></div>
+        <div class="special-card"><div class="special-top">B(2,2)</div><div class="special-bot">1/6</div></div>
+        <div class="special-card"><div class="special-top">B(n,1)</div><div class="special-bot">1/n</div></div>
+        <div class="special-card"><div class="special-top">B(&#189;,&#189;)</div><div class="special-bot">&#960;</div></div>
+      </div>
+      <div class="insight" id="b-insight">The Beta function integrand shapes the Beta probability distribution, used in Bayesian statistics.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Integrand t^(x&minus;1)(1&minus;t)^(y&minus;1) on [0,1]</div>
+      <canvas id="bc" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="sec-relation" class="section">
+  <div class="formula-box">
+    B(x, y) = &#915;(x) &middot; &#915;(y) / &#915;(x+y) &nbsp;&nbsp;&nbsp; This fundamental identity connects Beta and Gamma through a single elegant formula
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="ctrl-row">
+        <label>Parameter x</label>
+        <input type="range" id="rx" min="0.3" max="5" step="0.1" value="2">
+        <span class="ctrl-val" id="rxv">2.0</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Parameter y</label>
+        <input type="range" id="ry" min="0.3" max="5" step="0.1" value="3">
+        <span class="ctrl-val" id="ryv">3.0</span>
+      </div>
+      <div class="grid3" style="margin-bottom:12px">
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">&#915;(x) &middot; &#915;(y)</div>
+          <div class="metric-val" id="r-num">2.0000</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">&#915;(x+y)</div>
+          <div class="metric-val" id="r-den">6.0000</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">B(x,y) = ratio</div>
+          <div class="metric-val" id="r-val">0.08333</div>
+        </div>
+      </div>
+      <div class="insight">
+        Key identities from this relation:<br>
+        &bull; B(n,m) = (n&minus;1)!(m&minus;1)!/(n+m&minus;1)!<br>
+        &bull; B(&#189;,&#189;) = &#960; &nbsp;&nbsp; &bull; B(1,y) = 1/y<br>
+        &bull; &#915;(&#189;) = &#8730;&#960; &nbsp;&nbsp; &bull; &#915;(n) = (n&minus;1)!
+      </div>
+      <div class="insight" id="r-verify" style="margin-top:8px;border-left:3px solid var(--green)">Verification will appear here.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">B(x,y) heatmap &mdash; dot = current (x,y)</div>
+      <canvas id="rc" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="sec-integral" class="section">
+  <div class="formula-box" id="int-formula">&#915;(z) = &#8747;&#8320;&#8734; t^(z&minus;1) e^(&minus;t) dt &mdash; shaded area equals the function value</div>
+  <div class="grid2">
+    <div>
+      <div class="ctrl-row">
+        <label>Function</label>
+        <select id="int-fn">
+          <option value="gamma">Gamma integrand</option>
+          <option value="beta">Beta integrand</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <label id="ip-lbl">Parameter z</label>
+        <input type="range" id="ip" min="0.5" max="5" step="0.1" value="2.5">
+        <span class="ctrl-val" id="ipv">2.5</span>
+      </div>
+      <div class="ctrl-row" id="ip2-row" style="display:none">
+        <label>Parameter y</label>
+        <input type="range" id="ip2" min="0.5" max="5" step="0.1" value="2">
+        <span class="ctrl-val" id="ip2v">2.0</span>
+      </div>
+      <div class="grid2" style="margin-bottom:12px">
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">Integral value</div>
+          <div class="metric-val" id="int-val">1.3293</div>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="card-title">Peak location</div>
+          <div class="metric-val" id="int-peak-loc">t = 1.50</div>
+          <div class="metric-sub" id="int-peak-val">f = 0.3347</div>
+        </div>
+      </div>
+      <div class="insight" id="int-insight">The Gamma integrand peaks at t = z&minus;1. As z increases the peak moves right and the integral grows factorially.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Integrand with shaded area = function value</div>
+      <canvas id="ic" height="320"></canvas>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  Saurabh Maths &mdash; Beta &amp; Gamma Function Explorer &mdash; saurabhmaths.github.io
+</footer>
+
+<script>
+function gamma(z){
+  if(z<0.5) return Math.PI/(Math.sin(Math.PI*z)*gamma(1-z));
+  z-=1;
+  const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,
+    -176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  let x=c[0];
+  for(let i=1;i<9;i++) x+=c[i]/(z+i);
+  const t=z+7.5;
+  return Math.sqrt(2*Math.PI)*Math.pow(t,z+0.5)*Math.exp(-t)*x;
+}
+function beta(x,y){return gamma(x)*gamma(y)/gamma(x+y)}
+
+function isDark(){return window.matchMedia('(prefers-color-scheme:dark)').matches}
+function tc(){return isDark()?'rgba(255,255,255,0.8)':'rgba(0,0,0,0.7)'}
+function tc2(){return isDark()?'rgba(255,255,255,0.38)':'rgba(0,0,0,0.35)'}
+function gc(){return isDark()?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.06)'}
+function bg(){return isDark()?'#1c1c1e':'#ffffff'}
+
+function prep(id,ht){
+  const cv=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.getBoundingClientRect().width||460;
+  const h=ht||300;
+  cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px';
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  return {ctx,w,h};
+}
+
+function axes(ctx,w,h,xl,xr,yb,yt,xlab,ylab){
+  const sx=x=>(x-xl)/(xr-xl)*w;
+  const sy=y=>h-(y-yb)/(yt-yb)*h;
+  const xStep=(xr-xl)/6, yStep=(yt-yb)/5;
+  ctx.strokeStyle=gc(); ctx.lineWidth=0.5;
+  for(let x=Math.ceil(xl/xStep)*xStep-xStep;x<=xr+xStep;x+=xStep){
+    ctx.beginPath();ctx.moveTo(sx(x),0);ctx.lineTo(sx(x),h);ctx.stroke();
+    if(x>xl&&x<xr){ctx.fillStyle=tc2();ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(x.toFixed(x<1?1:0),sx(x),h-3);}
+  }
+  for(let y=Math.ceil(yb/yStep)*yStep;y<=yt;y+=yStep){
+    ctx.beginPath();ctx.moveTo(0,sy(y));ctx.lineTo(w,sy(y));ctx.stroke();
+    if(y>yb+0.001){ctx.fillStyle=tc2();ctx.textAlign='right';ctx.fillText(y.toFixed(y<1?2:1),32,sy(y)+4);}
+  }
+  ctx.strokeStyle=tc2(); ctx.lineWidth=1;
+  if(yb<0){ctx.beginPath();ctx.moveTo(0,sy(0));ctx.lineTo(w,sy(0));ctx.stroke();}
+  if(xl<0){ctx.beginPath();ctx.moveTo(sx(0),0);ctx.lineTo(sx(0),h);ctx.stroke();}
+  ctx.fillStyle=tc(); ctx.font='12px sans-serif';
+  ctx.textAlign='right'; ctx.fillText(ylab,w-2,14);
+  ctx.textAlign='center'; ctx.fillText(xlab,w-22,h-3);
+  return {sx,sy};
+}
+
+function drawGamma(){
+  const z=parseFloat(document.getElementById('gz').value);
+  const {ctx,w,h}=prep('gc',300);
+  ctx.clearRect(0,0,w,h);
+  const {sx,sy}=axes(ctx,w,h,0.1,5.8,-2,8,'z','Γ(z)');
+
+  ctx.strokeStyle='#534AB7'; ctx.lineWidth=2.5; ctx.beginPath();
+  let first=true;
+  for(let x=0.2;x<=5.75;x+=0.015){
+    try{
+      const y=gamma(x);
+      if(!isFinite(y)||y<-2.5||y>8.5){first=true;continue;}
+      if(first){ctx.moveTo(sx(x),sy(y));first=false;}else ctx.lineTo(sx(x),sy(y));
+    }catch(e){first=true;}
+  }
+  ctx.stroke();
+
+  const gv=gamma(z);
+  if(isFinite(gv)&&gv>-2.5&&gv<8.5){
+    ctx.setLineDash([4,3]); ctx.strokeStyle='#534AB7'; ctx.lineWidth=1; ctx.globalAlpha=0.4;
+    ctx.beginPath();ctx.moveTo(sx(z),sy(Math.max(-2,Math.min(gv,8))));ctx.lineTo(sx(z),sy(0));ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.fillStyle='#534AB7';
+    ctx.beginPath();ctx.arc(sx(z),sy(Math.max(-2,Math.min(gv,8))),7,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=bg(); ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(sx(z),sy(Math.max(-2,Math.min(gv,8))),7,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#534AB7'; ctx.font='bold 12px sans-serif'; ctx.textAlign='left';
+    const lbl=`Γ(${z.toFixed(2)}) = ${gv.toFixed(4)}`;
+    ctx.fillText(lbl,Math.min(sx(z)+10,w-140),Math.max(sy(Math.min(gv,8))-10,18));
+  }
+
+  const gv1=gamma(z+1);
+  document.getElementById('g-val').textContent=isFinite(gv)?gv.toFixed(4):'∞';
+  document.getElementById('g-val1').textContent=isFinite(gv1)?gv1.toFixed(4):'∞';
+  document.getElementById('g-recur').textContent=isFinite(gv)?(z*gv).toFixed(4):'∞';
+
+  const n=Math.round(z);
+  if(Math.abs(z-n)<0.08&&n>=1&&n<=6){
+    let f=1; for(let i=1;i<n;i++) f*=i;
+    document.getElementById('g-insight').textContent=`At z=${n}: Γ(${n}) = ${isFinite(gv)?gv.toFixed(4):'?'} = (${n}−1)! = ${f}. The Gamma function is a perfect extension of factorials to all real numbers.`;
+  } else {
+    document.getElementById('g-insight').textContent=`At z=${z.toFixed(2)}: Γ(z) = ${isFinite(gv)?gv.toFixed(4):'∞'}, z·Γ(z) = ${isFinite(gv)?(z*gv).toFixed(4):'∞'} = Γ(z+1) = ${isFinite(gv1)?gv1.toFixed(4):'∞'}. The recurrence always holds.`;
+  }
+}
+
+function drawBeta(){
+  const x=parseFloat(document.getElementById('bx').value);
+  const y=parseFloat(document.getElementById('by').value);
+  const {ctx,w,h}=prep('bc',300);
+  ctx.clearRect(0,0,w,h);
+
+  const N=400;
+  let ymax=0;
+  for(let i=2;i<N-2;i++){
+    const t=i/N;
+    const v=Math.pow(t,x-1)*Math.pow(1-t,y-1);
+    if(isFinite(v)&&v>ymax) ymax=v;
+  }
+  ymax=Math.max(ymax*1.18,0.2);
+  const {sx,sy}=axes(ctx,w,h,0,1,0,ymax,'t','f(t)');
+
+  ctx.fillStyle='rgba(83,74,183,0.15)';
+  ctx.beginPath(); ctx.moveTo(sx(0.005),sy(0));
+  for(let i=1;i<N-1;i++){
+    const t=i/N;
+    const v=Math.pow(t,x-1)*Math.pow(1-t,y-1);
+    if(!isFinite(v)) continue;
+    ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+  }
+  ctx.lineTo(sx(0.995),sy(0)); ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle='#534AB7'; ctx.lineWidth=2.5; ctx.beginPath(); let first=true;
+  for(let i=1;i<N-1;i++){
+    const t=i/N;
+    const v=Math.pow(t,x-1)*Math.pow(1-t,y-1);
+    if(!isFinite(v)||v>ymax*2.5){first=true;continue;}
+    if(first){ctx.moveTo(sx(t),sy(Math.min(v,ymax)));first=false;}else ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+  }
+  ctx.stroke();
+
+  if(x>1&&y>1){
+    const pt=(x-1)/(x+y-2);
+    const pv=Math.pow(pt,x-1)*Math.pow(1-pt,y-1);
+    ctx.fillStyle='#1D9E75';
+    ctx.beginPath();ctx.arc(sx(pt),sy(Math.min(pv,ymax)),6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1D9E75'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`peak t=${pt.toFixed(2)}`,sx(pt)+8,sy(Math.min(pv,ymax))-6);
+  }
+
+  const bv=beta(x,y);
+  document.getElementById('b-val').textContent=isFinite(bv)?bv.toFixed(5):'∞';
+  document.getElementById('b-sym').textContent=isFinite(beta(y,x))?beta(y,x).toFixed(5):'∞';
+
+  const desc=x<1&&y<1?'U-shaped: density at both endpoints. Used for extreme probabilities in Bayesian statistics.':
+             x<=1?'Right-skewed: density peaks near t=0.':y<=1?'Left-skewed: density peaks near t=1.':
+             x>1&&y>1?`Bell-shaped. Peak at t=(x−1)/(x+y−2) = ${((x-1)/(x+y-2)).toFixed(2)}. This is the Beta probability distribution shape.`:
+             'Uniform: all values equally likely (x=y=1).';
+  document.getElementById('b-insight').textContent=`B(${x.toFixed(1)},${y.toFixed(1)}) = ${isFinite(bv)?bv.toFixed(5):'∞'}. ${desc}`;
+}
+
+function drawRelation(){
+  const x=parseFloat(document.getElementById('rx').value);
+  const y=parseFloat(document.getElementById('ry').value);
+  const {ctx,w,h}=prep('rc',300);
+  ctx.clearRect(0,0,w,h);
+
+  const N=55, xmax=5.2, ymax=5.2;
+  const cw=w/N, ch=h/N;
+  let vmax=0;
+  const vals=[];
+  for(let i=0;i<N;i++){
+    for(let j=0;j<N;j++){
+      const bx=(i+0.5)/N*xmax+0.1;
+      const by=(N-j-0.5)/N*ymax+0.1;
+      const bv=beta(bx,by);
+      const v=isFinite(bv)&&bv<12?bv:0;
+      vals.push(v);
+      if(v>vmax) vmax=v;
+    }
+  }
+  vmax=Math.max(vmax,0.01);
+  for(let i=0;i<N;i++){
+    for(let j=0;j<N;j++){
+      const v=vals[i*N+j];
+      const t=Math.min(v/vmax,1);
+      const r=Math.round(20+t*160), g2=Math.round(30+t*120), b2=165;
+      ctx.fillStyle=`rgba(${r},${g2},${b2},${0.1+t*0.85})`;
+      ctx.fillRect(i*cw,j*ch,cw+1,ch+1);
+    }
+  }
+
+  ctx.fillStyle=tc2(); ctx.font='10px sans-serif';
+  ctx.textAlign='center'; ctx.fillText('x →',w-20,h-3);
+  ctx.textAlign='left'; ctx.fillText('↑ y',3,13);
+
+  for(let xi=1;xi<=5;xi++){
+    const px=(xi-0.1)/xmax*w;
+    ctx.fillStyle=tc2(); ctx.textAlign='center'; ctx.font='10px sans-serif';
+    ctx.fillText(xi,px,h-3);
+  }
+  for(let yi=1;yi<=5;yi++){
+    const py=h-(yi-0.1)/ymax*h;
+    ctx.fillStyle=tc2(); ctx.textAlign='right'; ctx.font='10px sans-serif';
+    ctx.fillText(yi,28,py+4);
+  }
+
+  const px=(x-0.1)/xmax*w, py=h-(y-0.1)/ymax*h;
+  ctx.fillStyle='#E24B4A';
+  ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);ctx.stroke();
+
+  const gx=gamma(x), gy=gamma(y), gxy=gamma(x+y);
+  const bv=gx*gy/gxy;
+  document.getElementById('r-num').textContent=(gx*gy).toFixed(4);
+  document.getElementById('r-den').textContent=gxy.toFixed(4);
+  document.getElementById('r-val').textContent=isFinite(bv)?bv.toFixed(5):'∞';
+  document.getElementById('r-verify').textContent=`Γ(${x.toFixed(1)})×Γ(${y.toFixed(1)}) / Γ(${(x+y).toFixed(1)}) = ${gx.toFixed(3)}×${gy.toFixed(3)} / ${gxy.toFixed(3)} = ${isFinite(bv)?bv.toFixed(5):'∞'} ✓`;
+}
+
+function drawIntegral(){
+  const fn=document.getElementById('int-fn').value;
+  const p=parseFloat(document.getElementById('ip').value);
+  const p2=parseFloat(document.getElementById('ip2').value);
+  const isGamma=fn==='gamma';
+
+  document.getElementById('ip2-row').style.display=isGamma?'none':'flex';
+  document.getElementById('ip-lbl').textContent=isGamma?'Parameter z':'Parameter x';
+  document.getElementById('int-formula').textContent=isGamma?
+    'Γ(z) = ∫₀^∞ t^(z−1) · e^(−t) dt   —   shaded area = Γ(z)':
+    'B(x,y) = ∫₀¹ t^(x−1)(1−t)^(y−1) dt   —   shaded area = B(x,y)';
+
+  const {ctx,w,h}=prep('ic',320);
+  ctx.clearRect(0,0,w,h);
+
+  if(isGamma){
+    const tmax=Math.max((p-1)*2.8+7,9);
+    let ymax=0;
+    for(let t=0.05;t<=tmax;t+=0.05){
+      const v=Math.pow(t,p-1)*Math.exp(-t);
+      if(isFinite(v)&&v>ymax) ymax=v;
+    }
+    ymax*=1.22;
+    const {sx,sy}=axes(ctx,w,h,0,tmax,0,ymax,'t','f(t)');
+
+    ctx.fillStyle='rgba(83,74,183,0.15)';
+    ctx.beginPath(); ctx.moveTo(sx(0.02),sy(0));
+    for(let t=0.02;t<=tmax;t+=0.05){
+      const v=Math.pow(t,p-1)*Math.exp(-t);
+      if(!isFinite(v)) continue;
+      ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+    }
+    ctx.lineTo(sx(tmax),sy(0)); ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle='#534AB7'; ctx.lineWidth=2.5; ctx.beginPath(); let first=true;
+    for(let t=0.02;t<=tmax;t+=0.04){
+      const v=Math.pow(t,p-1)*Math.exp(-t);
+      if(!isFinite(v)||v>ymax*2){first=true;continue;}
+      if(first){ctx.moveTo(sx(t),sy(Math.min(v,ymax)));first=false;}else ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+    }
+    ctx.stroke();
+
+    const peakT=Math.max(p-1,0.02);
+    const peakV=Math.pow(peakT,p-1)*Math.exp(-peakT);
+    ctx.setLineDash([4,3]); ctx.strokeStyle='#1D9E75'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+    ctx.beginPath();ctx.moveTo(sx(peakT),sy(0));ctx.lineTo(sx(peakT),sy(Math.min(peakV,ymax)));ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.fillStyle='#1D9E75';
+    ctx.beginPath();ctx.arc(sx(peakT),sy(Math.min(peakV,ymax)),6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1D9E75'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`peak t=${peakT.toFixed(2)}`,sx(peakT)+8,sy(Math.min(peakV,ymax))-8);
+
+    const gv=gamma(p);
+    document.getElementById('int-val').textContent=isFinite(gv)?gv.toFixed(5):'∞';
+    document.getElementById('int-peak-loc').textContent=`t = ${peakT.toFixed(2)}`;
+    document.getElementById('int-peak-val').textContent=`f = ${isFinite(peakV)?peakV.toFixed(4):'∞'}`;
+    document.getElementById('int-insight').textContent=`Γ(${p.toFixed(1)}) = ${isFinite(gv)?gv.toFixed(5):'∞'}. The integrand t^(z−1)e^(−t) peaks at t = z−1 = ${peakT.toFixed(2)}. As z increases the peak moves right and the integral grows like a factorial.`;
+  } else {
+    const N=400;
+    let ymax=0;
+    for(let i=2;i<N-2;i++){
+      const t=i/N;
+      const v=Math.pow(t,p-1)*Math.pow(1-t,p2-1);
+      if(isFinite(v)&&v>ymax) ymax=v;
+    }
+    ymax=Math.max(ymax*1.2,0.2);
+    const {sx,sy}=axes(ctx,w,h,0,1,0,ymax,'t','f(t)');
+
+    ctx.fillStyle='rgba(83,74,183,0.15)';
+    ctx.beginPath(); ctx.moveTo(sx(0.005),sy(0));
+    for(let i=1;i<N-1;i++){
+      const t=i/N;
+      const v=Math.pow(t,p-1)*Math.pow(1-t,p2-1);
+      if(!isFinite(v)) continue;
+      ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+    }
+    ctx.lineTo(sx(0.995),sy(0)); ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle='#534AB7'; ctx.lineWidth=2.5; ctx.beginPath(); let first=true;
+    for(let i=1;i<N-1;i++){
+      const t=i/N;
+      const v=Math.pow(t,p-1)*Math.pow(1-t,p2-1);
+      if(!isFinite(v)||v>ymax*2.5){first=true;continue;}
+      if(first){ctx.moveTo(sx(t),sy(Math.min(v,ymax)));first=false;}else ctx.lineTo(sx(t),sy(Math.min(v,ymax)));
+    }
+    ctx.stroke();
+
+    const bv=beta(p,p2);
+    const peakT=p>1&&p2>1?(p-1)/(p+p2-2):p<=1?0.02:0.98;
+    const peakV=Math.pow(peakT,p-1)*Math.pow(1-peakT,p2-1);
+    ctx.fillStyle='#1D9E75';
+    ctx.beginPath();ctx.arc(sx(peakT),sy(Math.min(peakV,ymax)),6,0,Math.PI*2);ctx.fill();
+
+    document.getElementById('int-val').textContent=isFinite(bv)?bv.toFixed(5):'∞';
+    document.getElementById('int-peak-loc').textContent=`t = ${peakT.toFixed(2)}`;
+    document.getElementById('int-peak-val').textContent=`f = ${isFinite(peakV)?peakV.toFixed(4):'∞'}`;
+    document.getElementById('int-insight').textContent=`B(${p.toFixed(1)},${p2.toFixed(1)}) = ${isFinite(bv)?bv.toFixed(5):'∞'}. The shaded area under t^(x−1)(1−t)^(y−1) on [0,1] equals the Beta function value.`;
+  }
+}
+
+const renderers={gamma:drawGamma,beta:drawBeta,relation:drawRelation,integral:drawIntegral};
+const secIds={gamma:'sec-gamma',beta:'sec-beta',relation:'sec-relation',integral:'sec-integral'};
+let cur='gamma';
+
+function showTab(t){
+  cur=t;
+  Object.entries(secIds).forEach(([k,id])=>document.getElementById(id).classList.toggle('active',k===t));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.t===t));
+  setTimeout(()=>renderers[t]&&renderers[t](),60);
+}
+
+document.querySelectorAll('.tab').forEach(el=>el.addEventListener('click',()=>showTab(el.dataset.t)));
+
+function bind(id,redraw){
+  const sl=document.getElementById(id);
+  const vl=document.getElementById(id+'v');
+  sl.addEventListener('input',()=>{
+    vl.textContent=parseFloat(sl.value).toFixed(parseFloat(sl.step)<0.5?2:1);
+    if(cur===redraw) renderers[redraw]();
+  });
+}
+bind('gz','gamma'); bind('bx','beta'); bind('by','beta');
+bind('rx','relation'); bind('ry','relation');
+bind('ip','integral'); bind('ip2','integral');
+document.getElementById('int-fn').addEventListener('change',()=>{if(cur==='integral') drawIntegral();});
+
+window.addEventListener('resize',()=>renderers[cur]&&renderers[cur]());
+setTimeout(()=>showTab('gamma'),100);
+</script>
+</body>
+</html>
