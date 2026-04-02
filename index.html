@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODE Phase Plane & Stability Explorer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f6f7f9;
+    --bg3: #eef0f4;
+    --text: #1a1a1a;
+    --text2: #555;
+    --text3: #888;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --blue: #185FA5;
+    --green: #1D9E75;
+    --red: #D85A30;
+    --amber: #BA7517;
+    --purple: #534AB7;
+    --teal: #0F6E56;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e;
+      --bg2: #2c2c2e;
+      --bg3: #3a3a3c;
+      --text: #f2f2f7;
+      --text2: #aeaeb2;
+      --text3: #636366;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: var(--blue);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  header h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+  header p  { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.5rem; }
+
+  .tabs {
+    display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .tab:hover { background: var(--bg3); color: var(--text); }
+  .tab.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+
+  .info-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .metric {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .metric-label { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 600; color: var(--text); }
+
+  .badge-row { margin-bottom: 1rem; min-height: 32px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+  }
+  .badge-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; opacity: 0.8;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (max-width: 700px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .info-row { grid-template-columns: repeat(3, 1fr); }
+    .controls-grid { grid-template-columns: 1fr !important; }
+  }
+
+  .panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+
+  .panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  canvas {
+    display: block;
+    border-radius: var(--radius-sm);
+    width: 100%;
+    height: auto;
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .ctrl {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+  }
+
+  .ctrl label {
+    font-size: 12px; font-weight: 500;
+    color: var(--text2);
+    display: block; margin-bottom: 8px;
+  }
+
+  .ctrl-row { display: flex; align-items: center; gap: 10px; }
+
+  input[type=range] {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+
+  .val {
+    font-size: 13px; font-weight: 600;
+    color: var(--text);
+    min-width: 38px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .explanation {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.1rem;
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.65;
+    min-height: 54px;
+  }
+
+  .matrix-display {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .pendulum-hint {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 12px;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+    background: var(--bg);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">∂</div>
+  <div>
+    <h1>ODE Phase Plane &amp; Stability Explorer</h1>
+    <p>Interactive visualizations for Ordinary Differential Equations</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-mode="phase">Phase portrait</button>
+    <button class="tab" data-mode="eigenvalue">Eigenvalue map</button>
+    <button class="tab" data-mode="lyapunov">Lyapunov stability</button>
+    <button class="tab" data-mode="pendulum">Pendulum</button>
+  </div>
+
+  <div class="badge-row" id="badge-row"></div>
+
+  <div class="info-row" id="info-row">
+    <div class="metric">
+      <div class="metric-label">Trace &tau; = &lambda;&#8321; + &lambda;&#8322;</div>
+      <div class="metric-value" id="m-trace">0.00</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Det &Delta; = &lambda;&#8321; &middot; &lambda;&#8322;</div>
+      <div class="metric-value" id="m-det">0.00</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Discriminant D = &tau;&sup2;&minus;4&Delta;</div>
+      <div class="metric-value" id="m-disc">0.00</div>
+    </div>
+  </div>
+
+  <div id="matrix-display" class="matrix-display"></div>
+
+  <div class="main-grid">
+    <div class="panel">
+      <div class="panel-title" id="left-title">Phase portrait</div>
+      <canvas id="phaseCanvas" width="480" height="380"></canvas>
+      <p class="pendulum-hint" id="phase-hint"></p>
+    </div>
+    <div class="panel">
+      <div class="panel-title" id="right-title">Eigenvalue plane</div>
+      <canvas id="eigenCanvas" width="480" height="380"></canvas>
+    </div>
+  </div>
+
+  <div class="controls-grid" id="controls-wrap">
+    <div class="ctrl">
+      <label>a&#8321;&#8321; — top-left entry</label>
+      <div class="ctrl-row">
+        <input type="range" id="a11" min="-3" max="3" step="0.1" value="-1">
+        <span class="val" id="a11v">-1.0</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>a&#8321;&#8322; — top-right entry</label>
+      <div class="ctrl-row">
+        <input type="range" id="a12" min="-3" max="3" step="0.1" value="1">
+        <span class="val" id="a12v">1.0</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>a&#8322;&#8321; — bottom-left entry</label>
+      <div class="ctrl-row">
+        <input type="range" id="a21" min="-3" max="3" step="0.1" value="-2">
+        <span class="val" id="a21v">-2.0</span>
+      </div>
+    </div>
+    <div class="ctrl">
+      <label>a&#8322;&#8322; — bottom-right entry</label>
+      <div class="ctrl-row">
+        <input type="range" id="a22" min="-3" max="3" step="0.1" value="-1">
+        <span class="val" id="a22v">-1.0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="explanation" id="explanation">
+    Drag the sliders to change the system matrix and explore different stability types.
+  </div>
+
+</div>
+
+<footer>
+  Saurabh Maths &mdash; ODE Visualization Suite &mdash;
+  Phase Plane, Eigenvalue Analysis, Lyapunov Stability, Pendulum
+</footer>
+
+<script>
+const PC = document.getElementById('phaseCanvas');
+const EC = document.getElementById('eigenCanvas');
+const pCtx = PC.getContext('2d');
+const eCtx = EC.getContext('2d');
+
+let mode = 'phase';
+let pendulumAngle = Math.PI / 2.5;
+let pendulumOmega = 0;
+let animId = null;
+let pendulumTrail = [];
+
+const vals = { a11: -1, a12: 1, a21: -2, a22: -1 };
+
+function isDark() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function getColors() {
+  const dark = isDark();
+  return {
+    bg:      dark ? '#1c1c1e' : '#ffffff',
+    bg2:     dark ? '#2c2c2e' : '#f6f7f9',
+    text:    dark ? '#f2f2f7' : '#1a1a1a',
+    text2:   dark ? '#aeaeb2' : '#666',
+    grid:    dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+    axis:    dark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.3)',
+    origin:  dark ? '#f2f2f7' : '#1a1a1a',
+  };
+}
+
+function getMatrix() {
+  return [vals.a11, vals.a12, vals.a21, vals.a22];
+}
+
+function eigenvalues(a, b, c, d) {
+  const tr = a + d, det = a * d - b * c, disc = tr * tr - 4 * det;
+  if (disc >= 0) {
+    const s = Math.sqrt(disc);
+    return [{ re: (tr + s) / 2, im: 0 }, { re: (tr - s) / 2, im: 0 }];
+  } else {
+    const s = Math.sqrt(-disc);
+    return [{ re: tr / 2, im: s / 2 }, { re: tr / 2, im: -s / 2 }];
+  }
+}
+
+function classify(tr, det, disc) {
+  if (det < 0)
+    return { label: 'Saddle point', stable: 'Unstable',
+      bg: '#FEF0EE', color: '#C0392B',
+      desc: 'One positive, one negative eigenvalue. Trajectories form a hyperbolic pattern. There are stable and unstable manifolds (separatrices). Always unstable — no matter how small the perturbation, the system moves away in at least one direction.' };
+  if (Math.abs(det) < 0.001)
+    return { label: 'Non-isolated equilibria', stable: 'Degenerate',
+      bg: '#F5F5F5', color: '#888',
+      desc: 'Determinant is zero. The origin is not an isolated critical point — a whole line of equilibria exists.' };
+  if (disc > 0.001 && tr < -0.001)
+    return { label: 'Stable node', stable: 'Asymptotically stable',
+      bg: '#EAF7F1', color: '#1D9E75',
+      desc: 'Both eigenvalues are real and negative. All trajectories approach the origin along the eigenvector directions. The system always returns to equilibrium after any disturbance.' };
+  if (disc > 0.001 && tr > 0.001)
+    return { label: 'Unstable node', stable: 'Unstable',
+      bg: '#FEF0EE', color: '#D85A30',
+      desc: 'Both eigenvalues are real and positive. All trajectories diverge from the origin exponentially. The system grows without bound.' };
+  if (disc < -0.001 && tr < -0.001)
+    return { label: 'Stable spiral', stable: 'Asymptotically stable',
+      bg: '#EAF7F1', color: '#0F6E56',
+      desc: 'Complex eigenvalues with negative real part (\u03b1 < 0). Trajectories spiral inward while oscillating. The system returns to equilibrium with decaying oscillations — like a damped spring.' };
+  if (disc < -0.001 && tr > 0.001)
+    return { label: 'Unstable spiral', stable: 'Unstable',
+      bg: '#FEF0EE', color: '#993C1D',
+      desc: 'Complex eigenvalues with positive real part (\u03b1 > 0). Trajectories spiral outward with growing oscillations. The system is unstable.' };
+  if (disc < -0.001 && Math.abs(tr) < 0.05)
+    return { label: 'Centre', stable: 'Stable (not asymptotic)',
+      bg: '#EBF4FD', color: '#185FA5',
+      desc: 'Pure imaginary eigenvalues (\u03b1 = 0). Trajectories are closed ellipses — the system oscillates forever without growing or decaying. It is stable (stays close to origin) but never returns exactly to it. Example: undamped pendulum.' };
+  if (Math.abs(disc) < 0.001 && tr < -0.001)
+    return { label: 'Stable star node', stable: 'Asymptotically stable',
+      bg: '#EAF7F1', color: '#1D9E75',
+      desc: 'Repeated negative eigenvalue. Trajectories converge to the origin, all arriving along straight lines.' };
+  if (Math.abs(disc) < 0.001 && tr > 0.001)
+    return { label: 'Unstable star node', stable: 'Unstable',
+      bg: '#FEF0EE', color: '#D85A30',
+      desc: 'Repeated positive eigenvalue. Trajectories all diverge along straight lines from the origin.' };
+  return { label: 'Centre', stable: 'Stable', bg: '#EBF4FD', color: '#185FA5', desc: '' };
+}
+
+function rk4(x, y, dt, a, b, c, d) {
+  const f = (x, y) => [a * x + b * y, c * x + d * y];
+  const [k1x, k1y] = f(x, y);
+  const [k2x, k2y] = f(x + dt / 2 * k1x, y + dt / 2 * k1y);
+  const [k3x, k3y] = f(x + dt / 2 * k2x, y + dt / 2 * k2y);
+  const [k4x, k4y] = f(x + dt * k3x, y + dt * k3y);
+  return [x + dt / 6 * (k1x + 2*k2x + 2*k3x + k4x),
+          y + dt / 6 * (k1y + 2*k2y + 2*k3y + k4y)];
+}
+
+function setupCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { w: rect.width, h: rect.height, ctx };
+}
+
+function drawGrid(ctx, w, h, cx, cy, scale) {
+  const C = getColors();
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 0.5;
+  for (let i = -8; i <= 8; i++) {
+    ctx.beginPath(); ctx.moveTo(cx + i * scale, 0); ctx.lineTo(cx + i * scale, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy + i * scale); ctx.lineTo(w, cy + i * scale); ctx.stroke();
+  }
+  ctx.strokeStyle = C.axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+}
+
+function drawArrowhead(ctx, x, y, dx, dy, col, size) {
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 0.001) return;
+  const nx = dx/len, ny = dy/len;
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(x + nx*size, y + ny*size);
+  ctx.lineTo(x - nx*size + ny*size*0.6, y - ny*size - nx*size*0.6);
+  ctx.lineTo(x - nx*size - ny*size*0.6, y - ny*size + nx*size*0.6);
+  ctx.fill();
+}
+
+function drawPhase() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = PC.width / dpr, h = PC.height / dpr;
+  const cx = w / 2, cy = h / 2, scale = Math.min(w, h) / 8.5;
+  const [a, b, c, d] = getMatrix();
+  const C = getColors();
+
+  pCtx.clearRect(0, 0, PC.width, PC.height);
+  drawGrid(pCtx, w, h, cx, cy, scale);
+
+  pCtx.fillStyle = C.text2; pCtx.font = '12px sans-serif';
+  pCtx.fillText('x\u2081', w - 18, cy - 6);
+  pCtx.fillText('x\u2082', cx + 6, 14);
+
+  const ICs = [];
+  [1.4, 2.2, 3.0].forEach(r => {
+    for (let a2 = 0; a2 < Math.PI * 2; a2 += Math.PI / 3)
+      ICs.push([r * Math.cos(a2), r * Math.sin(a2)]);
+  });
+
+  const palette = ['#185FA5','#1D9E75','#D85A30','#534AB7','#BA7517','#993C1D'];
+  const dt = 0.02, maxSteps = 700, maxR = 4.5;
+
+  ICs.forEach(([x0, y0], idx) => {
+    const col = palette[idx % palette.length];
+    pCtx.strokeStyle = col; pCtx.lineWidth = 1.6; pCtx.globalAlpha = 0.8;
+    pCtx.beginPath();
+    let x = x0, y = y0, px = cx + x*scale, py = cy - y*scale;
+    pCtx.moveTo(px, py);
+    let lastX = x, lastY = y;
+    for (let s = 0; s < maxSteps; s++) {
+      const [nx, ny] = rk4(x, y, dt, a, b, c, d);
+      if (!isFinite(nx) || !isFinite(ny) || nx*nx+ny*ny > maxR*maxR) break;
+      pCtx.lineTo(cx + nx*scale, cy - ny*scale);
+      lastX = nx; lastY = ny; x = nx; y = ny;
+    }
+    pCtx.stroke(); pCtx.globalAlpha = 1;
+
+    let mx = x0, my = y0;
+    for (let s = 0; s < 35 && mx*mx+my*my < maxR*maxR; s++)
+      [mx, my] = rk4(mx, my, dt, a, b, c, d);
+    const fdx = mx - x0, fdy = my - y0;
+    drawArrowhead(pCtx, cx+mx*scale, cy-my*scale, fdx*scale, -fdy*scale, col, 6);
+  });
+
+  const tr = a+d, det = a*d-b*c, disc = tr*tr-4*det;
+  const cls = classify(tr, det, disc);
+  pCtx.fillStyle = cls.color;
+  pCtx.beginPath(); pCtx.arc(cx, cy, 8, 0, Math.PI*2); pCtx.fill();
+  pCtx.strokeStyle = C.bg; pCtx.lineWidth = 2.5;
+  pCtx.beginPath(); pCtx.arc(cx, cy, 8, 0, Math.PI*2); pCtx.stroke();
+}
+
+function drawEigen() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = EC.width / dpr, h = EC.height / dpr;
+  const cx = w / 2, cy = h / 2;
+  const scX = w / 9, scY = h / 9;
+  const [a, b, c, d] = getMatrix();
+  const eigs = eigenvalues(a, b, c, d);
+  const C = getColors();
+
+  eCtx.clearRect(0, 0, EC.width, EC.height);
+
+  eCtx.fillStyle = isDark() ? 'rgba(29,158,117,0.1)' : 'rgba(29,158,117,0.07)';
+  eCtx.fillRect(0, 0, cx, h);
+  eCtx.fillStyle = isDark() ? 'rgba(216,90,48,0.1)' : 'rgba(216,90,48,0.07)';
+  eCtx.fillRect(cx, 0, cx, h);
+
+  drawGrid(eCtx, w, h, cx, cy, scX);
+
+  eCtx.font = '12px sans-serif';
+  eCtx.fillStyle = '#1D9E75'; eCtx.fillText('\u2190 stable (Re < 0)', 8, 18);
+  eCtx.fillStyle = '#D85A30'; eCtx.fillText('unstable (Re > 0) \u2192', w - 155, 18);
+  eCtx.fillStyle = C.text2;
+  eCtx.fillText('Re(\u03bb)', w - 40, cy - 6);
+  eCtx.fillText('Im(\u03bb)', cx + 6, 14);
+
+  eCtx.setLineDash([5, 4]);
+  eCtx.strokeStyle = isDark() ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+  eCtx.lineWidth = 1.5;
+  eCtx.beginPath(); eCtx.moveTo(cx, 0); eCtx.lineTo(cx, h); eCtx.stroke();
+  eCtx.setLineDash([]);
+
+  eigs.forEach((ev, i) => {
+    const px = cx + ev.re * scX, py = cy - ev.im * scY;
+    const col = (ev.re < -0.05) ? '#1D9E75' :
+                (ev.re >  0.05) ? '#D85A30' : '#185FA5';
+    eCtx.fillStyle = col;
+    eCtx.beginPath(); eCtx.arc(px, py, 10, 0, Math.PI*2); eCtx.fill();
+    eCtx.strokeStyle = C.bg; eCtx.lineWidth = 2.5;
+    eCtx.beginPath(); eCtx.arc(px, py, 10, 0, Math.PI*2); eCtx.stroke();
+    eCtx.fillStyle = '#fff'; eCtx.font = 'bold 11px sans-serif';
+    eCtx.textAlign = 'center'; eCtx.textBaseline = 'middle';
+    eCtx.fillText('\u03bb' + (i+1), px, py);
+    eCtx.textAlign = 'left'; eCtx.textBaseline = 'alphabetic';
+    const re = ev.re.toFixed(2), im = ev.im.toFixed(2);
+    const lbl = Math.abs(ev.im) < 0.01 ?
+      `\u03bb${i+1} = ${re}` : `\u03bb${i+1} = ${re} ${ev.im >= 0 ? '+' : ''}${im}i`;
+    eCtx.fillStyle = C.text2; eCtx.font = '12px sans-serif';
+    const lx = Math.max(4, Math.min(w - 130, px + 14));
+    const ly = Math.max(14, Math.min(h - 8, py + 4));
+    eCtx.fillText(lbl, lx, ly);
+  });
+}
+
+function drawLyapunov() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = PC.width / dpr, h = PC.height / dpr;
+  const cx = w/2, cy = h/2, scale = Math.min(w,h) / 8;
+  const [a, b, c, d] = getMatrix();
+  const C = getColors();
+
+  pCtx.clearRect(0, 0, PC.width, PC.height);
+  drawGrid(pCtx, w, h, cx, cy, scale);
+
+  const levels = [0.25, 0.75, 1.5, 2.5, 4.0];
+  const lCols  = ['#9FE1CB','#5DCAA5','#1D9E75','#0F6E56','#085041'];
+  levels.forEach((lev, i) => {
+    const r = Math.sqrt(lev) * scale;
+    pCtx.strokeStyle = lCols[i]; pCtx.lineWidth = 2;
+    pCtx.beginPath(); pCtx.arc(cx, cy, r, 0, Math.PI*2); pCtx.stroke();
+    pCtx.fillStyle = lCols[i]; pCtx.font = '11px sans-serif';
+    pCtx.fillText(`V=${lev}`, cx + r + 3, cy - 3);
+  });
+
+  for (let xi = -3.2; xi <= 3.2; xi += 0.7) {
+    for (let yi = -3.2; yi <= 3.2; yi += 0.7) {
+      if (xi === 0 && yi === 0) continue;
+      const vdot = 2*xi*(a*xi+b*yi) + 2*yi*(c*xi+d*yi);
+      const px = cx + xi*scale, py = cy - yi*scale;
+      if (px < 4 || px > w-4 || py < 4 || py > h-4) continue;
+      pCtx.fillStyle = vdot < -0.01 ? '#1D9E75' : vdot > 0.01 ? '#E24B4A' : '#888';
+      pCtx.beginPath(); pCtx.arc(px, py, 4.5, 0, Math.PI*2); pCtx.fill();
+    }
+  }
+
+  pCtx.fillStyle = '#E24B4A';
+  pCtx.beginPath(); pCtx.arc(cx, cy, 8, 0, Math.PI*2); pCtx.fill();
+
+  pCtx.fillStyle = C.text2; pCtx.font = '12px sans-serif';
+  pCtx.fillText('x\u2081', w-18, cy-6); pCtx.fillText('x\u2082', cx+6, 14);
+  pCtx.fillStyle = '#1D9E75'; pCtx.fillText('\u25cf  V\u0307 < 0  (energy decreasing \u2014 stable)', 8, h-24);
+  pCtx.fillStyle = '#E24B4A'; pCtx.fillText('\u25cf  V\u0307 > 0  (energy increasing \u2014 unstable)', 8, h-8);
+}
+
+function drawLyapunovRight() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = EC.width / dpr, h = EC.height / dpr;
+  const [a, b, c, d] = getMatrix();
+  const C = getColors();
+
+  eCtx.clearRect(0, 0, EC.width, EC.height);
+  eCtx.fillStyle = isDark() ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  eCtx.fillRect(0, 0, w, h);
+
+  const checks = [[1,0],[0,1],[1,1],[-1,1],[0.7,0.8]];
+  const allNeg = checks.every(([x,y]) => 2*x*(a*x+b*y)+2*y*(c*x+d*y) < 0);
+  const somePos = checks.some(([x,y]) => 2*x*(a*x+b*y)+2*y*(c*x+d*y) > 0);
+
+  const lines = [
+    { t: 'Lyapunov function:', c: C.text2, big: false },
+    { t: 'V(x\u2081, x\u2082) = x\u2081\u00b2 + x\u2082\u00b2', c: '#185FA5', big: true },
+    { t: '', c: C.text2, big: false },
+    { t: 'V(0,0) = 0  \u2713', c: C.text2, big: false },
+    { t: 'V(x) > 0  for x \u2260 0  \u2713', c: C.text2, big: false },
+    { t: '', c: C.text2, big: false },
+    { t: 'Time derivative along trajectories:', c: C.text2, big: false },
+    { t: 'V\u0307 = 2x\u2081\u1e8b\u2081 + 2x\u2082\u1e8b\u2082', c: '#534AB7', big: false },
+    { t: '   = 2x\u2081(a\u2081\u2081x\u2081 + a\u2081\u2082x\u2082)', c: '#534AB7', big: false },
+    { t: '   + 2x\u2082(a\u2082\u2081x\u2081 + a\u2082\u2082x\u2082)', c: '#534AB7', big: false },
+    { t: '', c: C.text2, big: false },
+    { t: allNeg ? 'V\u0307 < 0 everywhere  \u2713' :
+        somePos ? 'V\u0307 > 0 at some points  \u2717' : 'V\u0307 \u2248 0 (borderline)',
+      c: allNeg ? '#1D9E75' : somePos ? '#E24B4A' : '#888', big: true },
+    { t: allNeg ? '\u21d2 Asymptotically stable' :
+        somePos ? '\u21d2 Cannot confirm stability' : '\u21d2 Marginally stable',
+      c: allNeg ? '#1D9E75' : somePos ? '#E24B4A' : '#888', big: false },
+  ];
+
+  let y = 30;
+  lines.forEach(l => {
+    eCtx.fillStyle = l.c;
+    eCtx.font = l.big ? 'bold 14px monospace' : '13px monospace';
+    eCtx.fillText(l.t, 16, y);
+    y += l.big ? 26 : 20;
+  });
+}
+
+function drawPendulum() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = PC.width / dpr, h = PC.height / dpr;
+  const cx = w/2, cy = h/2, scale = Math.min(w,h) / 8;
+  const C = getColors();
+
+  pCtx.clearRect(0, 0, PC.width, PC.height);
+  drawGrid(pCtx, w, h, cx, cy, scale);
+
+  const energies = [0.3, 0.7, 0.95, 1.4, 2.2];
+  const eCols   = ['#9FE1CB','#5DCAA5','#1D9E75','#185FA5','#534AB7'];
+
+  energies.forEach((E, idx) => {
+    pCtx.strokeStyle = eCols[idx]; pCtx.lineWidth = E >= 1 ? 1.8 : 1.6;
+    if (E < 0.999) {
+      pCtx.beginPath();
+      let started = false;
+      const pts = [];
+      for (let th = -Math.PI + 0.02; th <= Math.PI - 0.02; th += 0.015) {
+        const v2 = 2*(E + Math.cos(th));
+        if (v2 < 0) continue;
+        pts.push([th, Math.sqrt(v2)]);
+      }
+      pts.forEach(([th, om]) => {
+        const px = cx + th*scale, py = cy - om*scale;
+        if (!started) { pCtx.moveTo(px, py); started = true; }
+        else pCtx.lineTo(px, py);
+      });
+      for (let i = pts.length-1; i >= 0; i--) {
+        const [th, om] = pts[i];
+        pCtx.lineTo(cx + th*scale, cy + om*scale);
+      }
+      pCtx.closePath(); pCtx.stroke();
+    } else {
+      [1, -1].forEach(sign => {
+        pCtx.beginPath(); let s2 = false;
+        for (let th = -Math.PI*2.5; th <= Math.PI*2.5; th += 0.02) {
+          const v2 = 2*(E + Math.cos(th));
+          if (v2 < 0) continue;
+          const om = sign * Math.sqrt(v2);
+          const px = cx + th*scale, py = cy - om*scale;
+          if (px < -10 || px > w+10 || py < -10 || py > h+10) { s2 = false; continue; }
+          if (!s2) { pCtx.moveTo(px, py); s2 = true; } else pCtx.lineTo(px, py);
+        }
+        pCtx.stroke();
+      });
+    }
+  });
+
+  pCtx.strokeStyle = '#E24B4A'; pCtx.lineWidth = 2.5;
+  [1,-1].forEach(sign => {
+    pCtx.beginPath(); let s2 = false;
+    for (let th = -Math.PI*2.5; th <= Math.PI*2.5; th += 0.015) {
+      const v2 = 2*(1.0 + Math.cos(th));
+      if (v2 < 0) continue;
+      const om = sign * Math.sqrt(v2);
+      const px = cx + th*scale, py = cy - om*scale;
+      if (px<-10||px>w+10||py<-10||py>h+10){s2=false;continue;}
+      if (!s2){pCtx.moveTo(px,py);s2=true;}else pCtx.lineTo(px,py);
+    }
+    pCtx.stroke();
+  });
+
+  [-Math.PI*2, -Math.PI, 0, Math.PI, Math.PI*2].forEach(th => {
+    const isStable = Math.abs(th % (Math.PI*2)) < 0.01 ||
+                     Math.abs(Math.abs(th % (Math.PI*2)) - Math.PI*2) < 0.01;
+    const px = cx + th*scale;
+    pCtx.fillStyle = isStable ? '#1D9E75' : '#E24B4A';
+    pCtx.beginPath(); pCtx.arc(px, cy, 7, 0, Math.PI*2); pCtx.fill();
+    pCtx.strokeStyle = C.bg; pCtx.lineWidth = 2;
+    pCtx.beginPath(); pCtx.arc(px, cy, 7, 0, Math.PI*2); pCtx.stroke();
+  });
+
+  if (pendulumTrail.length > 1) {
+    pCtx.strokeStyle = '#BA7517'; pCtx.lineWidth = 2; pCtx.globalAlpha = 0.6;
+    pCtx.beginPath();
+    pendulumTrail.forEach(([th, om], i) => {
+      const px = cx + th*scale, py = cy - om*scale;
+      if (i === 0) pCtx.moveTo(px, py); else pCtx.lineTo(px, py);
+    });
+    pCtx.stroke(); pCtx.globalAlpha = 1;
+  }
+
+  const ppx = cx + pendulumAngle*scale, ppy = cy - pendulumOmega*scale;
+  if (ppx > 0 && ppx < w && ppy > 0 && ppy < h) {
+    pCtx.fillStyle = '#BA7517';
+    pCtx.beginPath(); pCtx.arc(ppx, ppy, 9, 0, Math.PI*2); pCtx.fill();
+    pCtx.strokeStyle = '#fff'; pCtx.lineWidth = 2.5;
+    pCtx.beginPath(); pCtx.arc(ppx, ppy, 9, 0, Math.PI*2); pCtx.stroke();
+  }
+
+  pCtx.fillStyle = C.text2; pCtx.font = '12px sans-serif';
+  pCtx.fillText('\u03b8 (rad)', w-56, cy-6);
+  pCtx.fillText('\u03c9 = \u03b8\u0307', cx+6, 14);
+}
+
+function drawPendulumRight() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = EC.width / dpr, h = EC.height / dpr;
+  const C = getColors();
+  eCtx.clearRect(0, 0, EC.width, EC.height);
+
+  const pivx = w/2, pivy = 70, armLen = Math.min(w, h)*0.38;
+  const ang = pendulumAngle;
+  const bx = pivx + armLen*Math.sin(ang), by = pivy + armLen*Math.cos(ang);
+
+  eCtx.fillStyle = isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+  eCtx.fillRect(pivx-40, 0, 80, 10);
+  eCtx.strokeStyle = isDark() ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+  eCtx.lineWidth = 2.5; eCtx.beginPath();
+  eCtx.moveTo(pivx, pivy); eCtx.lineTo(bx, by); eCtx.stroke();
+
+  eCtx.fillStyle = '#1D9E75';
+  eCtx.beginPath(); eCtx.arc(pivx, pivy, 6, 0, Math.PI*2); eCtx.fill();
+
+  const bobR = 18;
+  const normAng = ((pendulumAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  const nearTop = Math.abs(normAng - Math.PI) < 0.4 || Math.abs(normAng - Math.PI) > Math.PI*2 - 0.4;
+  eCtx.fillStyle = nearTop ? '#E24B4A' : '#BA7517';
+  eCtx.beginPath(); eCtx.arc(bx, by, bobR, 0, Math.PI*2); eCtx.fill();
+  eCtx.strokeStyle = '#fff'; eCtx.lineWidth = 2.5;
+  eCtx.beginPath(); eCtx.arc(bx, by, bobR, 0, Math.PI*2); eCtx.stroke();
+
+  const E = pendulumOmega*pendulumOmega/2 - Math.cos(pendulumAngle) + 1;
+  const isLib = E < 0.98;
+  const degAng = (pendulumAngle * 180 / Math.PI).toFixed(1);
+
+  const stats = [
+    { label: 'Angle \u03b8', val: `${degAng}\u00b0` },
+    { label: 'Angular velocity \u03c9', val: `${pendulumOmega.toFixed(2)} rad/s` },
+    { label: 'Energy E', val: E.toFixed(3) },
+    { label: 'Motion type', val: isLib ? 'Libration' : 'Rotation', col: isLib ? '#1D9E75' : '#185FA5' },
+  ];
+
+  let sy = by + bobR + 28;
+  if (sy > h - 90) sy = h - 90;
+  stats.forEach(s => {
+    eCtx.fillStyle = C.text3; eCtx.font = '12px sans-serif';
+    eCtx.fillText(s.label, 14, sy);
+    eCtx.fillStyle = s.col || C.text; eCtx.font = 'bold 13px sans-serif';
+    eCtx.fillText(s.val, w - 14 - eCtx.measureText(s.val).width, sy);
+    sy += 22;
+  });
+
+  eCtx.fillStyle = C.text3; eCtx.font = '12px sans-serif';
+  eCtx.textAlign = 'center';
+  eCtx.fillText('Click the phase portrait to set initial conditions', w/2, h - 10);
+  eCtx.textAlign = 'left';
+}
+
+function updateMetrics() {
+  const [a, b, c, d] = getMatrix();
+  const tr = a+d, det = a*d-b*c, disc = tr*tr-4*det;
+  document.getElementById('m-trace').textContent = tr.toFixed(2);
+  document.getElementById('m-det').textContent   = det.toFixed(2);
+  document.getElementById('m-disc').textContent  = disc.toFixed(2);
+
+  const cls = classify(tr, det, disc);
+  document.getElementById('badge-row').innerHTML =
+    `<span class="badge" style="background:${cls.bg};color:${cls.color}">
+       <span class="badge-dot"></span>
+       ${cls.label} &mdash; ${cls.stable}
+     </span>`;
+  document.getElementById('explanation').textContent = cls.desc || '';
+
+  document.getElementById('matrix-display').textContent =
+    `A = [ ${a.toFixed(1)}  ${b.toFixed(1)} ]     ẋ₁ = ${a.toFixed(1)}x₁ + ${b.toFixed(1)}x₂\n` +
+    `    [ ${c.toFixed(1)}  ${d.toFixed(1)} ]     ẋ₂ = ${c.toFixed(1)}x₁ + ${d.toFixed(1)}x₂`;
+}
+
+function resizeCanvases() {
+  [PC, EC].forEach(cv => {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = cv.getBoundingClientRect();
+    if (rect.width === 0) return;
+    cv.width  = rect.width  * dpr;
+    cv.height = rect.height * dpr;
+    cv.getContext('2d').scale(dpr, dpr);
+  });
+}
+
+function render() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  resizeCanvases();
+  if (mode === 'phase' || mode === 'eigenvalue') {
+    updateMetrics();
+    drawPhase();
+    drawEigen();
+  } else if (mode === 'lyapunov') {
+    drawLyapunov();
+    drawLyapunovRight();
+  } else if (mode === 'pendulum') {
+    startPendulum();
+  }
+}
+
+function pendulumStep() {
+  const dt = 0.035;
+  pendulumOmega += -Math.sin(pendulumAngle) * dt;
+  pendulumAngle  += pendulumOmega * dt;
+  pendulumTrail.push([pendulumAngle, pendulumOmega]);
+  if (pendulumTrail.length > 180) pendulumTrail.shift();
+  drawPendulum();
+  drawPendulumRight();
+  animId = requestAnimationFrame(pendulumStep);
+}
+
+function startPendulum() {
+  pendulumTrail = [];
+  pendulumStep();
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === m));
+
+  const ctrl  = document.getElementById('controls-wrap');
+  const info  = document.getElementById('info-row');
+  const mdisp = document.getElementById('matrix-display');
+  const lt    = document.getElementById('left-title');
+  const rt    = document.getElementById('right-title');
+  const hint  = document.getElementById('phase-hint');
+
+  if (m === 'phase' || m === 'eigenvalue') {
+    ctrl.style.display = 'grid'; info.style.display = 'grid';
+    mdisp.style.display = 'block'; hint.textContent = '';
+    lt.textContent = 'Phase portrait';
+    rt.textContent = 'Eigenvalue plane';
+  } else if (m === 'lyapunov') {
+    ctrl.style.display = 'grid'; info.style.display = 'none';
+    mdisp.style.display = 'block'; hint.textContent = '';
+    lt.textContent = 'Lyapunov level sets   V = x\u2081\u00b2 + x\u2082\u00b2';
+    rt.textContent = 'Lyapunov analysis';
+    document.getElementById('badge-row').innerHTML = '';
+    document.getElementById('explanation').textContent =
+      'Green dots: V\u0307 < 0 \u2014 the system is moving to lower energy (stable direction). Red dots: V\u0307 > 0 \u2014 energy is increasing (unstable direction). Rings are level sets of V.';
+  } else if (m === 'pendulum') {
+    ctrl.style.display = 'none'; info.style.display = 'none';
+    mdisp.style.display = 'none';
+    lt.textContent = 'Phase portrait   \u03b8\u0307 = \u03c9,  \u03c9\u0307 = \u2212sin\u03b8';
+    rt.textContent = 'Physical pendulum';
+    hint.textContent = 'Click anywhere on the phase portrait to launch from that state';
+    document.getElementById('badge-row').innerHTML = '';
+    document.getElementById('explanation').textContent =
+      'Green dots = stable centres (\u03b8 = 0, \u00b12\u03c0, \u2026). Red squares = saddle points (\u03b8 = \u00b1\u03c0, upright). Red curves = separatrices dividing libration (closed orbits) from rotation (open orbits).';
+  }
+  render();
+}
+
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => setMode(t.dataset.mode)));
+
+['a11','a12','a21','a22'].forEach(id => {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(id + 'v');
+  sl.addEventListener('input', () => {
+    vals[id] = parseFloat(sl.value);
+    vl.textContent = parseFloat(sl.value).toFixed(1);
+    render();
+  });
+});
+
+PC.addEventListener('click', e => {
+  if (mode !== 'pendulum') return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = PC.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const w = PC.width / dpr, h = PC.height / dpr;
+  const cx = w/2, cy = h/2, scale = Math.min(w,h) / 8;
+  pendulumAngle = (mx - cx) / scale;
+  pendulumOmega = -(my - cy) / scale;
+  pendulumTrail = [];
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  startPendulum();
+});
+
+window.addEventListener('resize', () => render());
+
+setTimeout(() => {
+  resizeCanvases();
+  setMode('phase');
+}, 100);
+</script>
+</body>
+</html>
